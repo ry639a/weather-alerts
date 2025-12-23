@@ -1,0 +1,499 @@
+{
+  "name": "Weather Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "http://api.weatherapi.com/v1/current.json?",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $('AI Transform Request').item.json.weatherApiKey }}"
+            },
+            {
+              "name": "q",
+              "value": "={{ $('AI Transform Request').item.json.city }}"
+            },
+            {
+              "name": "aqi",
+              "value": "={{ $('AI Transform Request').item.json.aqi }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -416,
+        976
+      ],
+      "id": "d40326c6-382c-4e2c-b2a3-ff958034120b",
+      "name": "HTTP Request",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "sendTo": "yravali175@gmail.com",
+        "subject": "=Daily Weather Alert for {{ $json.city }} - {{ $now.format('MMMM dd, yyyy') }}",
+        "message": "=<h2>Weather Alert for {{ $json.city }}</h2><p><strong>Alert:</strong> {{ $json.condition }}</p><p><strong>Temperature:</strong> {{ $json.temperature }}°F</p><p><strong>Condition:</strong> {{ $json.condition }}</p><p><strong>Humidity:</strong> {{ $json.humidity }}%</p><p><strong>Wind Speed:</strong> {{ $json.wind_speed }} kph</p><p><strong>Recorded at:</strong> {{ $json.run_at }}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        960
+      ],
+      "id": "7c268a3d-c11b-40e6-b44f-6ade62a6b5f0",
+      "name": "Send a message",
+      "webhookId": "1f9e4d73-6a46-465b-8853-67dc7ea65387",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lOil27rMbNbWT8Xp",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "3763b34d-ee5a-4378-8b5e-ae1d82efe74a",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1088,
+        976
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9b9b8b68-58e5-42eb-9c3a-8275d51b6ed3",
+              "name": "weatherApiKey",
+              "value": "21b21e8096cf46ffb9e24941252112",
+              "type": "string"
+            },
+            {
+              "id": "f108d15b-3f44-487a-b33e-f9db3cfe532d",
+              "name": "aqi",
+              "value": "no",
+              "type": "string"
+            },
+            {
+              "id": "5847690f-1ffb-4c65-b3c0-fdd853107aa0",
+              "name": "city",
+              "value": "['Tampa', 'New Delhi', 'Dallas', 'Pittsburgh']",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4342e7af-19e0-4914-ae57-43a0dbe77052",
+      "name": "Configure Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -864,
+        976
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "instructions": "Split the json into seperate json objects each with one city",
+        "codeGeneratedForPrompt": "Split the json into seperate json objects each with one city",
+        "jsCode": "const items = $input.all();\nconst splitItems = items.flatMap((item) =>\n  item?.json?.city.map((city) => ({ json: { ...item.json, city } })),\n);\nreturn splitItems;\n"
+      },
+      "type": "n8n-nodes-base.aiTransform",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        976
+      ],
+      "id": "2cc188a3-df4d-474e-a014-3ec054b5a501",
+      "name": "AI Transform Request"
+    },
+    {
+      "parameters": {
+        "instructions": "Extract location.name as city, current.condition.text as condition, current.temp_f as temp, current.humidity as humidity, current.wind_kph as wind, current.pressure_in as pressure, current.feelslike_f as feels_like, current.uv as uv, current.heatindex_f as heat_index, current.last_updated as run_at. Output structured data with these fields.\nIf condition contains rain, snow, drizzle, storm, thunder, alert_type = precipitation alert\nif temp > 90, heat alert, if temp < 32, frost alert, else None",
+        "codeGeneratedForPrompt": "Extract location.name as city, current.condition.text as condition, current.temp_f as temp, current.humidity as humidity, current.wind_kph as wind, current.pressure_in as pressure, current.feelslike_f as feels_like, current.uv as uv, current.heatindex_f as heat_index, current.last_updated as run_at. Output structured data with these fields.\nIf condition contains rain, snow, drizzle, storm, thunder, alert_type = precipitation alert\nif temp > 90, heat alert, if temp < 32, frost alert, else None",
+        "jsCode": "const items = $input.all();\nconst result = items.map((item) => {\n  const { location, current } = item.json;\n  const { name: city } = location;\n  const {\n    condition,\n    temp_f: temp,\n    humidity,\n    wind_kph: wind,\n    pressure_in: pressure,\n    feelslike_f: feels_like,\n    uv,\n    heatindex_f: heat_index,\n    last_updated: run_at,\n  } = current;\n  const { text: conditionText } = condition;\n  let alert_type = \"None\";\n  if (\n    conditionText.includes(\"rain\") ||\n    conditionText.includes(\"snow\") ||\n    conditionText.includes(\"drizzle\") ||\n    conditionText.includes(\"storm\") ||\n    conditionText.includes(\"thunder\")\n  ) {\n    alert_type = \"precipitation alert\";\n  } else if (temp > 90) {\n    alert_type = \"heat alert\";\n  } else if (temp < 32) {\n    alert_type = \"frost alert\";\n  }\n  return {\n    json: {\n      city,\n      condition: conditionText,\n      temp,\n      humidity,\n      wind,\n      pressure,\n      feels_like,\n      uv,\n      heat_index,\n      run_at,\n      alert_type,\n    },\n    pairedItem: item.pairedItem,\n  };\n});\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.aiTransform",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        976
+      ],
+      "id": "07e00be4-6ea1-4e17-ab04-482114f1bd0e",
+      "name": "AI Transform Response"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.condition.toLowerCase() }}",
+                    "rightValue": "rain",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "76835849-125f-4f18-8aa9-1f213bb0e7e7"
+                  },
+                  {
+                    "leftValue": "={{ $json.condition.toLowerCase() }}",
+                    "rightValue": "snow",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-1"
+                  },
+                  {
+                    "leftValue": "={{ $json.condition.toLowerCase() }}",
+                    "rightValue": "drizzle",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-2"
+                  },
+                  {
+                    "leftValue": "={{ $json.condition.toLowerCase() }}",
+                    "rightValue": "storm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-3"
+                  },
+                  {
+                    "leftValue": "={{ $json.condition.toLowerCase() }}",
+                    "rightValue": "thunder",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "id-4"
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "precipitation alert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9dd7edbb-ee02-4a94-bcbd-b35f0681a2c5",
+                    "leftValue": "={{ parseFloat($json.temp) }}",
+                    "rightValue": 90,
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "heat alert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7ce068e9-bd51-4574-86d3-e4b4b5c0170f",
+                    "leftValue": "={{ parseFloat($json.temp) }}",
+                    "rightValue": 32,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "frost alert"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d93928b8-e9ee-4c3a-b8ad-70b46e97cfa4",
+                    "leftValue": "1",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Normal"
+            }
+          ]
+        },
+        "options": {
+          "ignoreCase": true,
+          "allMatchingOutputs": false
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        48,
+        944
+      ],
+      "id": "f4982821-8f79-4f92-9c48-71b642e56a74",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "tableId": "weather_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "run_at",
+              "fieldValue": "={{ $json.run_at }}"
+            },
+            {
+              "fieldId": "temperature",
+              "fieldValue": "={{ $json.temp }}"
+            },
+            {
+              "fieldId": "wind_speed",
+              "fieldValue": "={{ $json.wind }}"
+            },
+            {
+              "fieldId": "humidity",
+              "fieldValue": "={{ $json.humidity }}"
+            },
+            {
+              "fieldId": "condition",
+              "fieldValue": "={{ $json.condition }}"
+            },
+            {
+              "fieldId": "city",
+              "fieldValue": "={{ $json.city }}"
+            },
+            {
+              "fieldId": "alert_type",
+              "fieldValue": "={{ $json['alert type'] }}"
+            },
+            {
+              "fieldId": "raw_response",
+              "fieldValue": "={{ $json }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        512,
+        960
+      ],
+      "id": "3b038d98-7b43-4a4f-9ac0-e06255ded502",
+      "name": "Update Table",
+      "credentials": {
+        "supabaseApi": {
+          "id": "V4RrYzBrHDYzFLAG",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const item = $input.item;\nconst outputName = $('Switch').context.outputKey;\nreturn { json: { ...item.json, 'alert type': outputName } };"
+      },
+      "id": "604a54f9-c2c3-4fab-85be-967fa09a25c8",
+      "name": "Set Alert Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        960
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Transform Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Configure Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Request": {
+      "main": [
+        [
+          {
+            "node": "AI Transform Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Transform Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Transform Response": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Alert Type": {
+      "main": [
+        [
+          {
+            "node": "Update Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Set Alert Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Alert Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Alert Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Alert Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Table": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "44276a59-fdb1-4ab5-808a-cd46b81cc3df",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "24217c8213615447f2b6f3ad84388ba66ffbd684ea45e708bea0ba3c026d9d72"
+  },
+  "id": "6jDp5lhBFGupaNnP",
+  "tags": []
+}
