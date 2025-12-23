@@ -59,12 +59,12 @@ The workflow contains following nodes:
 ```
   
 ### 4. HTTP Request: 
-    This is an HTTP node that invoked the endpoint. We use http://api.weatherapi.com/v1/current to get current weather details.
+This is an HTTP node that invoked the endpoint. We use http://api.weatherapi.com/v1/current to get current weather details.
   #### Request URL: 
-    http://api.weatherapi.com/v1/current.json?key=123455677788abdcfeffgrrg&q=Tampa&aqi=no
+  http://api.weatherapi.com/v1/current.json?key=123455677788abdcfeffgrrg&q=Tampa&aqi=no
 
 ### 5. AI Transform Response: 
-    This is an AI Transform Node that parses the response and formats it in specified format.
+This is an AI Transform Node that parses the response and formats it in specified format.
   #### Instruction:
        """Extract location.name as city, current.condition.text as condition, current.temp_f as temp, current.humidity as humidity, 
        current.wind_kph as wind, current.pressure_in as pressure, current.feelslike_f as feels_like,   current.uv as uv, 
